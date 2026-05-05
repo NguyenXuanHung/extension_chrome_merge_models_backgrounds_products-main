@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <title>Fashion Image Batch — Options</title>
+    <link rel="stylesheet" href="popup.css">
+    <style>
+      body { min-width: 0; }
+      .app { width: 720px; max-width: 100%; }
+      textarea { width: 100%; min-height: 110px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-family: "JetBrains Mono", "Consolas", monospace; font-size: 12px; resize: vertical; }
+      textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); }
+      .field-block { display: grid; gap: 6px; margin-bottom: 14px; }
+      .field-block > label { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-subtle); }
+      .field-block small { color: var(--muted); font-size: 11px; }
+      .test-grid { display: grid; gap: 8px; margin-top: 10px; }
+      .test-item { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); }
+      .test-item.ok { border-color: rgba(5, 150, 105, 0.4); background: var(--success-soft); color: var(--success); }
+      .test-item.bad { border-color: rgba(220, 38, 38, 0.4); background: var(--danger-soft); color: var(--danger); }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="app-header">
+        <div class="app-brand">
+          <div class="app-logo" aria-hidden="true">▲</div>
+          <div>
+            <h1>Selector overrides</h1>
+            <p class="subtle">Chỉnh khi giao diện ChatGPT thay đổi. Mỗi dòng = 1 CSS selector.</p>
+          </div>
+        </div>
+      </header>
+
+      <section class="card">
+        <h2>Selectors</h2>
+
+        <div class="field-block">
+          <label for="composerTargets">Prompt input (composer)</label>
+          <textarea id="composerTargets" placeholder="div#prompt-textarea[contenteditable='true']
+div.ProseMirror#prompt-textarea
+..."></textarea>
+          <small>Dùng cho ô nhập prompt — contenteditable hoặc textarea.</small>
+        </div>
+
+        <div class="field-block">
+          <label for="fileInputTargets">File input (upload)</label>
+          <textarea id="fileInputTargets"></textarea>
+          <small>input[type="file"] mà ChatGPT đang dùng để nhận ảnh.</small>
+        </div>
+
+        <div class="field-block">
+          <label for="uploadAreaTargets">Upload drop zone</label>
+          <textarea id="uploadAreaTargets"></textarea>
+          <small>Vùng nhận drag & drop khi không tìm thấy file input.</small>
+        </div>
+
+        <div class="field-block">
+          <label for="submitTargets">Submit button</label>
+          <textarea id="submitTargets"></textarea>
+          <small>Nút Send / Submit — được lọc bỏ mic và nút Stop tự động.</small>
+        </div>
+
+        <div class="field-block">
+          <label for="resultImageTargets">Result image</label>
+          <textarea id="resultImageTargets"></textarea>
+          <small>Ảnh kết quả assistant render. Phải là &lt;img&gt;.</small>
+        </div>
+
+        <div class="field-block">
+          <label for="uploadThumbTargets">Upload thumbnail</label>
+          <textarea id="uploadThumbTargets"></textarea>
+          <small>Thumbnail hiện trong composer khi 1 ảnh đã upload xong (dùng để chờ đủ 3).</small>
+        </div>
+
+        <div class="field-block">
+          <label for="generatingTargets">Generating indicator</label>
+          <textarea id="generatingTargets"></textarea>
+          <small>Spinner / nút Stop trong khi ChatGPT đang generate.</small>
+        </div>
+
+        <div class="secondary-actions">
+          <button id="save-btn" class="primary small">Lưu</button>
+          <button id="reset-btn" class="ghost small">Reset về mặc định</button>
+          <button id="test-detect-btn" class="ghost small">Test Detect</button>
+          <button id="back-btn" class="ghost small">Đóng</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Kết quả Test Detect</h2>
+        <div id="test-results" class="test-grid">
+          <div class="test-item">Chưa chạy test.</div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

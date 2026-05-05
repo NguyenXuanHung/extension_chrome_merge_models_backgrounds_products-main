@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Fashion Image Batch — Mẫu × Cảnh × Sản phẩm",
+  "description": "Tự động ghép từng ảnh mẫu × cảnh × sản phẩm rồi gửi sang ChatGPT Image, chờ kết quả và tải về folder output.",
+  "version": "2.0.0",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "offscreen",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*"
+  ],
+  "action": {
+    "default_title": "Fashion Image Batch Runner",
+    "default_popup": "popup.html"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*"
+      ],
+      "js": [
+        "selectors.js",
+        "chatgptAutomation.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fashion Image Batch</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="app">
+      <header class="app-header">
+        <div class="app-brand">
+          <div class="app-logo" aria-hidden="true">▲</div>
+          <div>
+            <h1>Fashion Image Batch</h1>
+            <p class="subtle">Mẫu × Cảnh × Sản phẩm → ChatGPT Image</p>
+          </div>
+        </div>
+        <span id="run-state-badge" class="badge">idle</span>
+      </header>
+
+      <!-- Folder pickers ----------------------------------------------------->
+      <section class="card">
+        <h2>Folder reference</h2>
+
+        <div class="slot-row" data-role="model">
+          <div class="slot-meta">
+            <span class="slot-title">Mẫu (model)</span>
+            <span id="folder-label-model" class="slot-value">Chưa chọn</span>
+            <span id="folder-count-model" class="slot-count">0 ảnh</span>
+          </div>
+          <button class="ghost small" data-pick="model">Chọn</button>
+        </div>
+
+        <div class="slot-row" data-role="scene">
+          <div class="slot-meta">
+            <span class="slot-title">Cảnh (scene)</span>
+            <span id="folder-label-scene" class="slot-value">Chưa chọn</span>
+            <span id="folder-count-scene" class="slot-count">0 ảnh</span>
+          </div>
+          <button class="ghost small" data-pick="scene">Chọn</button>
+        </div>
+
+        <div class="slot-row" data-role="product">
+          <div class="slot-meta">
+            <span class="slot-title">Sản phẩm (product)</span>
+            <span id="folder-label-product" class="slot-value">Chưa chọn</span>
+            <span id="folder-count-product" class="slot-count">0 ảnh</span>
+          </div>
+          <button class="ghost small" data-pick="product">Chọn</button>
+        </div>
+
+        <div class="slot-row" data-role="output">
+          <div class="slot-meta">
+            <span class="slot-title">Output</span>
+            <span id="folder-label-output" class="slot-value">Chưa chọn</span>
+            <span id="folder-count-output" class="slot-count">Nơi lưu ảnh</span>
+          </div>
+          <button class="ghost small" data-pick="output">Chọn</button>
+        </div>
+
+        <div class="slot-row" data-role="prompt">
+          <div class="slot-meta">
+            <span class="slot-title">prompt.txt</span>
+            <span id="prompt-file-label" class="slot-value">Chưa chọn</span>
+            <span id="prompt-file-meta" class="slot-count">Template với placeholder</span>
+          </div>
+          <button id="choose-prompt-file-btn" class="ghost small">Chọn</button>
+        </div>
+
+        <label class="inline-check">
+          <input id="include-subfolders" type="checkbox">
+          <span>Đọc cả subfolder</span>
+        </label>
+      </section>
+
+      <!-- Settings ---------------------------------------------------------->
+      <section class="card">
+        <h2>Cấu hình</h2>
+
+        <div class="two-col">
+          <label class="field">
+            <span>Prefix tên file</span>
+            <input id="prefix-input" type="text" placeholder="fashion">
+          </label>
+          <label class="field">
+            <span>Aspect ratio</span>
+            <select id="aspect-ratio-select">
+              <option value="9:16">9:16</option>
+              <option value="1:1">1:1</option>
+              <option value="4:5">4:5</option>
+              <option value="16:9">16:9</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="two-col">
+          <label class="field">
+            <span>Delay giữa job (ms)</span>
+            <input id="delay-input" type="number" min="0" step="500" value="7000">
+          </label>
+          <label class="field">
+            <span>Số lần retry</span>
+            <input id="retry-input" type="number" min="0" max="10" value="2">
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Timeout chờ ảnh kết quả (ms)</span>
+          <input id="result-timeout-input" type="number" min="30000" step="5000" value="240000">
+        </label>
+
+        <div class="checks">
+          <label><input id="resume-failed-checkbox" type="checkbox"> Tự resume từ job lỗi gần nhất</label>
+          <label><input id="skip-existing-checkbox" type="checkbox"> Bỏ qua job đã có ảnh output</label>
+          <label><input id="overwrite-checkbox" type="checkbox"> Cho phép ghi đè file cũ</label>
+          <label><input id="mock-mode-checkbox" type="checkbox"> Mock mode (test offline)</label>
+        </div>
+
+        <div id="mock-warning" class="mock-warning hidden">
+          Mock mode đang BẬT. Extension sẽ KHÔNG gửi sang ChatGPT, chỉ tạo ảnh test cục bộ.
+        </div>
+      </section>
+
+      <!-- Controls ---------------------------------------------------------->
+      <section class="card">
+        <div class="panel-header">
+          <h2>Bắt đầu chạy</h2>
+          <div class="prompt-count-chip">
+            <span id="job-count">0 jobs</span>
+          </div>
+        </div>
+
+        <div id="validation-list" class="validation-list hidden"></div>
+
+        <button id="build-queue-btn" class="ghost full">Build queue (mẫu × cảnh × sản phẩm)</button>
+        <button id="start-btn" class="primary full hero">Start</button>
+
+        <div class="secondary-actions">
+          <button id="pause-btn" class="ghost small">Pause</button>
+          <button id="resume-btn" class="ghost small">Resume</button>
+          <button id="stop-btn" class="ghost small">Stop</button>
+          <button id="retry-btn" class="ghost small">Retry failed</button>
+        </div>
+
+        <div class="secondary-actions secondary-actions--3col">
+          <button id="export-json-btn" class="ghost small">Export JSON</button>
+          <button id="export-csv-btn" class="ghost small">Export CSV</button>
+          <button id="open-options-btn" class="ghost small">Options</button>
+        </div>
+      </section>
+
+      <!-- Status ------------------------------------------------------------>
+      <section class="card">
+        <h2>Trạng thái</h2>
+
+        <div class="status-grid">
+          <div><span>Total</span><strong id="stat-total">0</strong></div>
+          <div><span>Done</span><strong id="stat-done">0</strong></div>
+          <div><span>Running</span><strong id="stat-running">0</strong></div>
+          <div><span>Failed</span><strong id="stat-failed">0</strong></div>
+          <div><span>Skipped</span><strong id="stat-skipped">0</strong></div>
+          <div><span>Pending</span><strong id="stat-pending">0</strong></div>
+        </div>
+
+        <div class="progress">
+          <div id="progress-bar" class="progress-bar"></div>
+        </div>
+
+        <div class="current-job">
+          <div class="current-job-title">Job hiện tại</div>
+          <div id="current-job-summary">—</div>
+        </div>
+
+        <div class="time-row">
+          <div><span>Bắt đầu</span><strong id="time-started">—</strong></div>
+          <div><span>Kết thúc</span><strong id="time-finished">—</strong></div>
+        </div>
+      </section>
+
+      <!-- Queue & logs ------------------------------------------------------>
+      <section class="card">
+        <h2>Queue (5 dòng đầu / dòng cuối)</h2>
+        <div id="queue-list" class="queue-list"></div>
+      </section>
+
+      <section class="card">
+        <h2>Logs</h2>
+        <div id="log-list" class="log-list"></div>
+      </section>
+    </main>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

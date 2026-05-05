@@ -1,0 +1,13 @@
+Dựa trên 3 ảnh reference đã upload:
+1. Ảnh người mẫu: {{MODEL_NAME}}
+2. Ảnh bối cảnh: {{SCENE_NAME}}
+3. Ảnh sản phẩm: {{PRODUCT_NAME}}
+
+Hãy tạo một ảnh quảng cáo thời trang realistic.
+- Giữ nguyên khuôn mặt, vóc dáng và thần thái của người mẫu trong ảnh mẫu.
+- Đặt người mẫu vào bối cảnh từ ảnh cảnh, ánh sáng tự nhiên, hài hòa.
+- Cho người mẫu sử dụng hoặc mặc sản phẩm từ ảnh sản phẩm một cách tự nhiên.
+- Bố cục sạch, ánh sáng đẹp, chất lượng cao.
+- Không chữ, không watermark, không logo, không méo mặt, không lỗi tay, không biến dạng sản phẩm.
+
+Job số {{INDEX}}/{{TOTAL}}.

@@ -1,0 +1,255 @@
+Bạn là senior Chrome Extension Engineer. Hãy phân tích extension Chrome hiện tại của tôi và refactor/nâng cấp thành một extension batch tạo ảnh bằng ChatGPT Image theo yêu cầu dưới đây.
+
+BỐI CẢNH EXTENSION CŨ
+- Extension cũ đã có chức năng đọc nhiều prompt từ file/folder, paste lần lượt vào ChatGPT Image đang mở, bấm submit, chờ ảnh tạo xong và tải ảnh về.
+- Extension cũ đã có hoặc đang làm logic detect vùng nhập prompt, vùng upload ảnh và nút submit trên giao diện ChatGPT.
+- Hãy giữ lại các phần logic cũ còn dùng được, refactor sạch hơn, không viết lại toàn bộ nếu không cần.
+
+MỤC TIÊU EXTENSION MỚI
+Tạo ảnh hàng loạt bằng cách ghép reference từ 3 folder:
+1. Folder "mẫu" — chứa ảnh người mẫu/model
+2. Folder "cảnh" — chứa ảnh bối cảnh/background/scene
+3. Folder "sản phẩm" — chứa ảnh sản phẩm/product
+4. Folder "output" — nơi lưu ảnh kết quả
+
+Extension sẽ tự tạo từng job bằng cách lấy lần lượt:
+mỗi ảnh mẫu x mỗi ảnh cảnh x mỗi ảnh sản phẩm
+
+Ví dụ:
+- mẫu có 2 ảnh
+- cảnh có 3 ảnh
+- sản phẩm có 4 ảnh
+=> tổng số job = 2 x 3 x 4 = 24 ảnh đầu ra
+
+YÊU CẦU GIAO DIỆN POPUP
+Trong popup extension cần có:
+
+1. Ô chọn folder "Mẫu"
+- Button: Chọn folder mẫu
+- Hiển thị số ảnh đã tìm thấy
+
+2. Ô chọn folder "Cảnh"
+- Button: Chọn folder cảnh
+- Hiển thị số ảnh đã tìm thấy
+
+3. Ô chọn folder "Sản phẩm"
+- Button: Chọn folder sản phẩm
+- Hiển thị số ảnh đã tìm thấy
+
+4. Ô chọn folder "Output"
+- Button: Chọn folder output
+- Đây là nơi lưu ảnh sau khi ChatGPT tạo xong
+
+5. Ô chọn file prompt.txt
+- Button: Chọn prompt.txt
+- File này là prompt template dùng cho mọi job
+- Nội dung prompt.txt có thể chứa placeholder để tự thay theo từng job
+
+6. Các option bổ sung:
+- Prefix tên file output
+- Delay giữa mỗi job, mặc định 5–10 giây
+- Số lần retry khi lỗi, mặc định 2
+- Checkbox: tự động resume từ job bị lỗi gần nhất
+- Checkbox: bỏ qua job đã có ảnh output
+- Nút Start
+- Nút Pause
+- Nút Resume
+- Nút Stop
+- Nút Export Log
+
+YÊU CẦU VỀ PROMPT TEMPLATE
+File prompt.txt cần hỗ trợ placeholder như sau:
+
+{{MODEL_NAME}} = tên file ảnh mẫu
+{{SCENE_NAME}} = tên file ảnh cảnh
+{{PRODUCT_NAME}} = tên file ảnh sản phẩm
+{{INDEX}} = số thứ tự job
+{{TOTAL}} = tổng số job
+
+Ví dụ nội dung prompt.txt:
+
+Dựa trên 3 ảnh reference đã upload:
+1. Ảnh người mẫu: {{MODEL_NAME}}
+2. Ảnh bối cảnh: {{SCENE_NAME}}
+3. Ảnh sản phẩm: {{PRODUCT_NAME}}
+
+Hãy tạo một ảnh quảng cáo thời trang realistic.
+Giữ khuôn mặt, vóc dáng và thần thái của người mẫu từ ảnh mẫu.
+Đặt người mẫu vào bối cảnh từ ảnh cảnh.
+Cho người mẫu sử dụng hoặc mặc sản phẩm từ ảnh sản phẩm một cách tự nhiên.
+Ảnh đầu ra phải có chất lượng cao, bố cục sạch, ánh sáng đẹp, không chữ, không watermark, không logo, không méo mặt, không lỗi tay, không biến dạng sản phẩm.
+
+TỶ LỆ ẢNH
+Trong popup cần có lựa chọn aspect ratio:
+- 9:16
+- 1:1
+- 4:5
+- 16:9
+Khi tạo prompt cuối cùng, tự động thêm dòng:
+"Make the aspect ratio [selected ratio]."
+
+QUY TẮC XỬ LÝ FILE
+- Chỉ nhận các file ảnh: jpg, jpeg, png, webp
+- Bỏ qua file ẩn, file lỗi, file không phải ảnh
+- Có thể bật/tắt chế độ đọc ảnh trong subfolder
+- Sắp xếp file theo tên tự nhiên: 1.png, 2.png, 10.png phải đúng thứ tự 1, 2, 10
+- Lưu danh sách job vào chrome.storage hoặc IndexedDB để có thể resume nếu tab bị reload
+
+QUY TẮC TẠO JOB
+Mỗi job bao gồm:
+- 1 ảnh mẫu
+- 1 ảnh cảnh
+- 1 ảnh sản phẩm
+- 1 prompt đã render từ prompt.txt
+- 1 tên file output
+
+Tên file output mặc định:
+{{PREFIX}}_{{INDEX}}_model-{{MODEL_BASENAME}}_scene-{{SCENE_BASENAME}}_product-{{PRODUCT_BASENAME}}.png
+
+Cần xử lý sanitize tên file:
+- bỏ ký tự đặc biệt
+- thay khoảng trắng bằng dấu -
+- giới hạn độ dài tên file nếu quá dài
+
+YÊU CẦU AUTOMATION TRÊN CHATGPT
+Content script cần tự động thao tác với ChatGPT đang mở:
+
+1. Detect vùng nhập prompt
+- Tìm textarea hoặc contenteditable composer
+- Nếu selector cũ không còn đúng, dùng fallback detector
+- Cho phép cấu hình selector trong popup hoặc options page
+
+2. Detect vùng upload ảnh
+- Tìm input[type="file"] nếu có
+- Nếu không có, dùng drag/drop event vào composer/upload area
+- Upload đúng 3 ảnh cho mỗi job: mẫu, cảnh, sản phẩm
+- Chờ upload hoàn tất trước khi submit
+
+3. Paste prompt
+- Render prompt từ prompt.txt
+- Paste vào vùng nhập prompt
+- Dispatch đầy đủ input/change events để ChatGPT nhận nội dung
+
+4. Submit
+- Detect nút submit/send
+- Chỉ bấm khi:
+  - 3 ảnh đã upload xong
+  - prompt đã paste xong
+  - nút submit đang enabled
+
+5. Chờ kết quả
+- Detect trạng thái đang generate
+- Chờ đến khi ảnh đầu ra xuất hiện
+- Chờ nút download hoặc ảnh kết quả sẵn sàng
+- Có timeout cho mỗi job, ví dụ 180–300 giây
+- Nếu timeout thì retry job
+
+6. Tải ảnh kết quả
+- Ưu tiên dùng logic download cũ nếu đã hoạt động tốt
+- Nếu có thể lấy blob/image URL thì lưu trực tiếp vào folder output bằng File System Access API
+- Nếu không thể lưu trực tiếp, dùng chrome.downloads API với filename đã format
+- Không ghi đè file cũ nếu chưa bật option overwrite
+- Nếu file đã tồn tại, thêm hậu tố _v2, _v3 hoặc skip tùy option
+
+YÊU CẦU LOG VÀ TRẠNG THÁI
+Cần có bảng trạng thái trong popup hoặc dashboard:
+- Tổng số job
+- Đã hoàn thành
+- Đang chạy
+- Bị lỗi
+- Bị skip
+- Job hiện tại
+- Tên model / scene / product đang xử lý
+- Thời gian bắt đầu
+- Thời gian kết thúc
+- Lỗi nếu có
+
+Mỗi job cần lưu log:
+{
+  index,
+  modelFile,
+  sceneFile,
+  productFile,
+  outputFile,
+  status,
+  retryCount,
+  startedAt,
+  finishedAt,
+  errorMessage
+}
+
+Cho phép export log thành CSV hoặc JSON.
+
+YÊU CẦU KỸ THUẬT
+- Chrome Extension Manifest V3
+- Dùng service worker, content script, popup
+- Dùng chrome.storage hoặc IndexedDB để lưu state
+- Dùng File System Access API cho việc chọn folder/file nếu phù hợp
+- Nếu File System Access API không hoạt động trong context extension, hãy tạo fallback hợp lý bằng chrome.downloads API
+- Code chia module rõ ràng:
+  - fileScanner.js
+  - jobBuilder.js
+  - promptRenderer.js
+  - chatgptAutomation.js
+  - downloader.js
+  - storage.js
+  - popup.js
+  - logger.js
+
+YÊU CẦU ĐỘ ỔN ĐỊNH
+- Có cơ chế pause/resume an toàn
+- Không mất queue khi reload tab
+- Có retry khi upload lỗi
+- Có retry khi submit lỗi
+- Có retry khi không detect được ảnh output
+- Có timeout từng bước
+- Có delay ngẫu nhiên nhẹ giữa các job để tránh thao tác quá dồn dập
+- Không chạy nếu tab ChatGPT chưa mở
+- Nếu ChatGPT chưa mở, hiện cảnh báo yêu cầu user mở trang ChatGPT Image trước
+
+YÊU CẦU OPTIONS / SELECTOR CONFIG
+Tạo trang Options để chỉnh các selector nếu giao diện ChatGPT thay đổi:
+- Prompt input selector
+- File input selector
+- Upload area selector
+- Submit button selector
+- Result image selector
+- Download button selector
+- Generating indicator selector
+
+Có nút "Test Detect" để kiểm tra:
+- Có tìm thấy prompt input không
+- Có tìm thấy upload area không
+- Có tìm thấy submit button không
+
+YÊU CẦU UX
+- Popup gọn, dễ dùng
+- Có thanh progress
+- Có preview 3 ảnh của job hiện tại
+- Có nút mở folder output nếu khả thi
+- Có thông báo lỗi rõ ràng bằng tiếng Việt
+- Không crash khi thiếu folder hoặc thiếu prompt.txt
+- Trước khi Start, validate:
+  - đã chọn folder mẫu
+  - đã chọn folder cảnh
+  - đã chọn folder sản phẩm
+  - đã chọn folder output
+  - đã chọn prompt.txt
+  - mỗi folder có ít nhất 1 ảnh
+
+KẾT QUẢ CẦN TRẢ VỀ
+Hãy cập nhật trực tiếp code extension hiện tại.
+Sau khi làm xong, hãy cung cấp:
+1. Tóm tắt các file đã sửa/thêm
+2. Hướng dẫn cài extension vào Chrome bằng Developer Mode
+3. Hướng dẫn sử dụng từng bước
+4. Các giới hạn kỹ thuật còn tồn tại
+5. Gợi ý selector nếu ChatGPT thay đổi giao diện
+6. Checklist test nhanh với 1 model, 1 scene, 1 product trước khi chạy batch lớn
+
+LƯU Ý QUAN TRỌNG
+- Không hard-code theo một giao diện duy nhất nếu có thể tránh.
+- Ưu tiên tái sử dụng logic extension cũ.
+- Không cần bypass captcha, không cần né giới hạn hệ thống, không làm gì vi phạm bảo mật.
+- Extension chỉ thực hiện thao tác theo lệnh của người dùng trên tab ChatGPT mà người dùng đã đăng nhập.
+- Code cần rõ ràng, dễ debug, có comment ở các đoạn quan trọng.
